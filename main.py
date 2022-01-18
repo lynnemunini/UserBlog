@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, abort
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 from datetime import date
@@ -11,6 +11,7 @@ from sqlalchemy.orm import relationship
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from forms import CreatePostForm
 from flask_gravatar import Gravatar
+from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'f5fa60f4fb2b18c0d07bce8b43583840a816fcc836dd7c7859a395a6b63dcf97'
@@ -57,6 +58,20 @@ class LoginForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Log In")
+
+
+# Admin decorator
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            id = current_user.id
+        except: 
+            id = None
+        if id != 1:
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Create a user_loader function
 @login_manager.user_loader
@@ -141,7 +156,8 @@ def contact():
 
 
 @app.route('/new-post', methods=["GET","POST"])
-@login_required
+# Ensure that the admin is logged in and authenticated before calling the actual view
+@admin_only
 def add_new_post():
         form = CreatePostForm()
         if form.validate_on_submit():
@@ -158,8 +174,9 @@ def add_new_post():
             return redirect(url_for("get_all_posts"))
         return render_template("make-post.html", form=form, logged_in=True)
 
-@login_required
 @app.route("/edit-post/<int:post_id>")
+# Ensure that the admin is logged in and authenticated before calling the actual view
+@admin_only
 def edit_post(post_id):
     post = BlogPost.query.get(post_id)
     edit_form = CreatePostForm(
@@ -180,8 +197,10 @@ def edit_post(post_id):
 
     return render_template("make-post.html", form=edit_form)
 
-@login_required
+
 @app.route("/delete/<int:post_id>")
+# Ensure that the admin is logged in and authenticated before calling the actual view
+@admin_only
 def delete_post(post_id):
     post_to_delete = BlogPost.query.get(post_id)
     db.session.delete(post_to_delete)
