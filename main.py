@@ -66,7 +66,12 @@ def load_user(user_id):
 @app.route('/')
 def get_all_posts():
     posts = BlogPost.query.all()
-    return render_template("index.html", all_posts=posts)
+    try:
+        id = current_user.id
+    except:
+        id = None
+        
+    return render_template("index.html", all_posts=posts, id=id)
 
 
 @app.route('/register', methods=['GET','POST'])
@@ -111,7 +116,6 @@ def login():
             elif password_match:
                 #Log in and authenticate user.
                 login_user(user)
-                # flash('You were successfully logged in')
                 return redirect(url_for("get_all_posts"))   
     return render_template("login.html", logged_in=current_user.is_authenticated, form=form)
 
@@ -119,7 +123,11 @@ def login():
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
-    return render_template("post.html", post=requested_post)
+    try:
+        id = current_user.id
+    except:
+        id = None
+    return render_template("post.html", post=requested_post, id=id)
 
 
 @app.route("/about")
@@ -132,24 +140,25 @@ def contact():
     return render_template("contact.html")
 
 
-@app.route("/new-post")
+@app.route('/new-post', methods=["GET","POST"])
+@login_required
 def add_new_post():
-    form = CreatePostForm()
-    if form.validate_on_submit():
-        new_post = BlogPost(
-            title=form.title.data,
-            subtitle=form.subtitle.data,
-            body=form.body.data,
-            img_url=form.img_url.data,
-            author=current_user,
-            date=date.today().strftime("%B %d, %Y")
-        )
-        db.session.add(new_post)
-        db.session.commit()
-        return redirect(url_for("get_all_posts"))
-    return render_template("make-post.html", form=form)
+        form = CreatePostForm()
+        if form.validate_on_submit():
+            new_post = BlogPost(
+                title=form.title.data,
+                subtitle=form.subtitle.data,
+                body=form.body.data,
+                img_url=form.img_url.data,
+                author=current_user.name,
+                date=date.today().strftime("%B %d, %Y")
+            )
+            db.session.add(new_post)
+            db.session.commit()
+            return redirect(url_for("get_all_posts"))
+        return render_template("make-post.html", form=form, logged_in=True)
 
-
+@login_required
 @app.route("/edit-post/<int:post_id>")
 def edit_post(post_id):
     post = BlogPost.query.get(post_id)
@@ -171,7 +180,7 @@ def edit_post(post_id):
 
     return render_template("make-post.html", form=edit_form)
 
-
+@login_required
 @app.route("/delete/<int:post_id>")
 def delete_post(post_id):
     post_to_delete = BlogPost.query.get(post_id)
