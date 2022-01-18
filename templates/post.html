@@ -1,4 +1,5 @@
 {% include "header.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 
   <!-- Page Header -->
   <header class="masthead" style="background-image: url('{{post.img_url}}')">
@@ -34,11 +35,11 @@
 
 
 <!--           Comments Area -->
-          <div class="col-lg-8 col-md-10 mx-auto comment">
+          <div class="col-lg-8 col-md-10 mx-auto comment"></div>
               <ul class="commentList">
                 <li>
                     <div class="commenterImage">
-                      <img src="https://pbs.twimg.com/profile_images/744849215675838464/IH0FNIXk.jpg"/>
+                      <img src="../static/img/avatar.svg"/>
                     </div>
                     <div class="commentText">
                       <p>Some comment</p>
@@ -47,7 +48,11 @@
                 </li>
               </ul>
             </div>
-
+            <div class="col-lg-8 col-md-10 mx-auto comment">
+              {{ ckeditor.load() }}
+              {{ ckeditor.config(name='comment') }}
+              {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+            </div>
 
           </div>
       </div>

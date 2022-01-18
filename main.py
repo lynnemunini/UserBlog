@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import CreatePostForm
+from forms import CreatePostForm, CommentForm
 from flask_gravatar import Gravatar
 from functools import wraps
 
@@ -145,12 +145,13 @@ def login():
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
+    form = CommentForm()
     requested_post = BlogPost.query.get(post_id)
     try:
         id = current_user.id
     except:
         id = None
-    return render_template("post.html", post=requested_post, id=id)
+    return render_template("post.html", post=requested_post, id=id, form=form)
 
 
 @app.route("/about")
