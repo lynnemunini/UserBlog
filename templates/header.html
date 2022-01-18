@@ -39,16 +39,18 @@
             <a class="nav-link" href="{{ url_for('get_all_posts') }}">Home</a>
           </li>
         
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-          </li>
-      
+          {% if current_user.is_authenticated: %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('logout') }}">Log Out</a>
           </li>
+          {% else: %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}">Register</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('register') }}">Log In</a>
+          </li>
+          {% endif %}
     
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('about') }}">About</a>

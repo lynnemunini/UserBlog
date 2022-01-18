@@ -33,7 +33,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(1000))
-db.create_all()
+# db.create_all()
 
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
@@ -44,7 +44,7 @@ class BlogPost(db.Model):
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
-db.create_all()
+# db.create_all()
 
 ##WTForm
 class RegisterForm(FlaskForm):
@@ -116,12 +116,6 @@ def login():
     return render_template("login.html", logged_in=current_user.is_authenticated, form=form)
 
 
-
-@app.route('/logout')
-def logout():
-    return redirect(url_for('get_all_posts'))
-
-
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
@@ -183,6 +177,12 @@ def delete_post(post_id):
     post_to_delete = BlogPost.query.get(post_id)
     db.session.delete(post_to_delete)
     db.session.commit()
+    return redirect(url_for('get_all_posts'))
+
+
+@app.route('/logout')
+def logout():
+    logout_user()
     return redirect(url_for('get_all_posts'))
 
 
