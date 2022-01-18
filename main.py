@@ -1,7 +1,10 @@
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 from datetime import date
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, PasswordField, EmailField
+from wtforms.validators import DataRequired
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
@@ -10,17 +13,27 @@ from forms import CreatePostForm
 from flask_gravatar import Gravatar
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = 'f5fa60f4fb2b18c0d07bce8b43583840a816fcc836dd7c7859a395a6b63dcf97'
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
 ##CONNECT TO DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-
+login_manager = LoginManager()
+# Configure for login object for login
+login_manager.init_app(app)
 
 ##CONFIGURE TABLES
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
+    name = db.Column(db.String(1000))
+db.create_all()
 
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
@@ -33,6 +46,22 @@ class BlogPost(db.Model):
     img_url = db.Column(db.String(250), nullable=False)
 db.create_all()
 
+##WTForm
+class RegisterForm(FlaskForm):
+    name = StringField("Your name", validators=[DataRequired()])
+    email = EmailField("Email", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Sign Up")
+
+class LoginForm(FlaskForm):
+    email = EmailField("Email", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Log In")
+
+# Create a user_loader function
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 @app.route('/')
 def get_all_posts():
@@ -40,14 +69,52 @@ def get_all_posts():
     return render_template("index.html", all_posts=posts)
 
 
-@app.route('/register')
+@app.route('/register', methods=['GET','POST'])
 def register():
-    return render_template("register.html")
+    form = RegisterForm()
+    if form.validate_on_submit():
+        name = request.form.get('name')
+        email = request.form.get('email')
+        # Check database for email address
+        user = User.query.filter_by(email=email).first() 
+        if user:
+            flash("You have an existing account. Login instead.")
+            return redirect(url_for("login"))
+        else:
+                password = request.form.get('password')
+                password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)
+                new_user = User(email=email, password = password, name = name)
+                db.session.add(new_user)
+                db.session.commit()
+                #Log in and authenticate user after adding details to database.
+                login_user(new_user)
+                return redirect(url_for("get_all_posts"))
+    return render_template("register.html", form=form, logged_in=current_user.is_authenticated)
 
 
-@app.route('/login')
+@app.route('/login', methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = request.form.get('email')
+        password_put = request.form.get('password')
+        user = User.query.filter_by(email=email).first() 
+        try:
+            password_match = check_password_hash(user.password, password_put)
+        except AttributeError:
+            flash("The email does not exist. Please try again.")
+            return redirect(url_for("login"))
+        else:
+            if password_match == False:
+                flash("Incorrect password")
+                return redirect(url_for("login")) 
+            elif password_match:
+                #Log in and authenticate user.
+                login_user(user)
+                # flash('You were successfully logged in')
+                return redirect(url_for("get_all_posts"))   
+    return render_template("login.html", logged_in=current_user.is_authenticated, form=form)
+
 
 
 @app.route('/logout')
