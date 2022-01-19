@@ -40,7 +40,8 @@
               <ul class="commentList">
                 <li>
                     <div class="commenterImage">
-                      <img src="../static/img/avatar.svg"/>
+                       <!-- To display gravatar images -->
+                      <img src="{{comment.comment_author.email | gravatar}}"/>
                     </div>
                     <div class="commentText">
                       <p>{{comment.text|safe}}</p>

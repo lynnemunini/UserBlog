@@ -18,6 +18,17 @@ app.config['SECRET_KEY'] = 'f5fa60f4fb2b18c0d07bce8b43583840a816fcc836dd7c7859a3
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
+# To use gravatar images
+gravatar = Gravatar(app,
+                    size=100,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None
+                    )
+
 ##CONNECT TO DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -180,7 +191,7 @@ def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
     post_comments = Comment.query.filter_by(blog_id=post_id).all()
     print(post_comments)
-    return render_template("post.html", post=requested_post, id=id, form=form, comments=post_comments)
+    return render_template("post.html", post=requested_post, id=id, form=form, comments=post_comments, gravatar=gravatar)
 
 
 @app.route("/about")
