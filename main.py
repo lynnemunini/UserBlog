@@ -20,8 +20,6 @@ Bootstrap(app)
 
 ##CONNECT TO DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///comments.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -41,7 +39,7 @@ class User(UserMixin, db.Model):
     #The "author" refers to the author property in the BlogPost class.
     posts = relationship("BlogPost", back_populates="author")
     comments = relationship("Comment", back_populates="comment_author")
-# db.create_all()
+db.create_all()
 
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
@@ -56,7 +54,7 @@ class BlogPost(db.Model):
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
     blog_comments = relationship("Comment", back_populates="post")
-# db.create_all()
+db.create_all()
 
 class Comment(db.Model):
     __tablename__ = "comments"
@@ -66,8 +64,8 @@ class Comment(db.Model):
     comment_author = relationship("User", back_populates="comments")
     blog_id = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
     post = relationship("BlogPost", back_populates="blog_comments")
+db.create_all()
 
-# db.create_all()
 ##WTForm
 class RegisterForm(FlaskForm):
     name = StringField("Your name", validators=[DataRequired()])
