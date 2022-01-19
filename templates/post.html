@@ -35,6 +35,7 @@
 
 
 <!--           Comments Area -->
+          {%for comment in comments %}
           <div class="col-lg-8 col-md-10 mx-auto comment"></div>
               <ul class="commentList">
                 <li>
@@ -42,12 +43,13 @@
                       <img src="../static/img/avatar.svg"/>
                     </div>
                     <div class="commentText">
-                      <p>Some comment</p>
-                      <span class="date sub-text">comment author name</span>
+                      <p>{{comment.text|safe}}</p>
+                      <span class="date sub-text">{{comment.comment_author.name}}</span>
                     </div>
                 </li>
               </ul>
             </div>
+            {%endfor%}
             <div class="col-lg-8 col-md-10 mx-auto comment">
               {{ ckeditor.load() }}
               {{ ckeditor.config(name='comment') }}

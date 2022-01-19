@@ -21,6 +21,7 @@ Bootstrap(app)
 ##CONNECT TO DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///comments.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -39,6 +40,7 @@ class User(UserMixin, db.Model):
     #This will act like a List of BlogPost objects attached to each User. 
     #The "author" refers to the author property in the BlogPost class.
     posts = relationship("BlogPost", back_populates="author")
+    comments = relationship("Comment", back_populates="comment_author")
 # db.create_all()
 
 class BlogPost(db.Model):
@@ -53,8 +55,19 @@ class BlogPost(db.Model):
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
-db.create_all()
+    blog_comments = relationship("Comment", back_populates="post")
+# db.create_all()
 
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(250), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    comment_author = relationship("User", back_populates="comments")
+    blog_id = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
+    post = relationship("BlogPost", back_populates="blog_comments")
+
+# db.create_all()
 ##WTForm
 class RegisterForm(FlaskForm):
     name = StringField("Your name", validators=[DataRequired()])
@@ -143,15 +156,33 @@ def login():
     return render_template("login.html", logged_in=current_user.is_authenticated, form=form)
 
 
-@app.route("/post/<int:post_id>")
+@app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
     form = CommentForm()
-    requested_post = BlogPost.query.get(post_id)
+
     try:
         id = current_user.id
     except:
         id = None
-    return render_template("post.html", post=requested_post, id=id, form=form)
+
+    if form.validate_on_submit():
+        if current_user.is_authenticated:
+            text = request.form.get("comment")
+            new_comment = Comment(
+                text=text,
+                author_id=current_user.id,
+                blog_id=post_id
+                )
+            db.session.add(new_comment)
+            db.session.commit()
+        else:
+            flash("You have to be logged in to make a comment.")
+            return redirect(url_for('login'))
+        
+    requested_post = BlogPost.query.get(post_id)
+    post_comments = Comment.query.filter_by(blog_id=post_id).all()
+    print(post_comments)
+    return render_template("post.html", post=requested_post, id=id, form=form, comments=post_comments)
 
 
 @app.route("/about")
